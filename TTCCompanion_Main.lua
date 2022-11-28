@@ -30,7 +30,7 @@ function TTCCompanion:GetMeetsRequirements(itemLink)
   return hasKnowledge, hasMaterials
 end
 
-function TTCCompanion:ToggleWritMarker(rowControl, slot)
+function TTCCompanion:ToggleWritMarkerBrowseResults(rowControl, slot)
   local markerControl = rowControl:GetNamedChild(TTCCompanion.name .. "Writ")
   local rData = rowControl.dataEntry and rowControl.dataEntry.data or nil
   local itemLink = rData and rData.itemLink or nil
@@ -56,6 +56,34 @@ function TTCCompanion:ToggleWritMarker(rowControl, slot)
   else markerControl:SetHidden(true) end
 end
 
+function TTCCompanion:ToggleWritMarkerInventoryList(rowControl, slot)
+  local markerControl = rowControl:GetNamedChild(TTCCompanion.name .. "Writ")
+  local relativeToPoint = rowControl:GetNamedChild("Button")
+  local bagId = rowControl.dataEntry.data.bagId
+  local slotIndex = rowControl.dataEntry.data.slotIndex
+  local itemLink = GetItemLink(bagId, slotIndex)
+  local hasKnowledge, hasMaterials = TTCCompanion:GetMeetsRequirements(itemLink)
+
+  if (not markerControl) then
+    if not hasKnowledge then return end
+    markerControl = WINDOW_MANAGER:CreateControl(rowControl:GetName() .. TTCCompanion.name .. "Writ", rowControl, CT_TEXTURE)
+    markerControl:SetDimensions(22, 22)
+    markerControl:SetInheritScale(false)
+    markerControl:SetAnchor(LEFT, relativeToPoint, LEFT)
+    markerControl:SetDrawTier(DT_HIGH)
+  end
+
+  if hasKnowledge and hasMaterials and TTCCompanion.tradingHouseOpened then
+    markerControl:SetTexture("TamrielTradeCentreCompanion/img/does_meet.dds")
+    markerControl:SetColor(0.17, 0.93, 0.17, 1)
+    markerControl:SetHidden(false)
+  elseif hasKnowledge and not hasMaterials and TTCCompanion.tradingHouseOpened then
+    markerControl:SetTexture("esoui/art/miscellaneous/help_icon.dds")
+    markerControl:SetColor(1, 0.99, 0, 1)
+    markerControl:SetHidden(false)
+  else markerControl:SetHidden(true) end
+end
+
 function TTCCompanion:ToggleVendorMarker(rowControl, slot)
   local markerControl = rowControl:GetNamedChild(TTCCompanion.name .. "Warn")
   local relativeToPoint = rowControl:GetNamedChild("SellPrice")
@@ -63,6 +91,9 @@ function TTCCompanion:ToggleVendorMarker(rowControl, slot)
   local vendorWarningPricing = nil
   local rData = rowControl.dataEntry and rowControl.dataEntry.data or nil
   local itemLink = rData and rData.itemLink or nil
+  if not itemLink and rowControl.slotIndex then
+    itemLink = GetItemLink(rowControl.bagId, rowControl.slotIndex)
+  end
   local purchasePrice = rData and rData.purchasePrice or nil
   local stackCount = rData and rData.stackCount or nil
   local itemType = GetItemLinkItemType(itemLink)
@@ -94,20 +125,30 @@ function TTCCompanion:ToggleVendorMarker(rowControl, slot)
   end
 end
 
-do
-  SecurePostHook(TRADING_HOUSE, "OpenTradingHouse", function()
-    if (not TTCCompanion.markersHooked) then
+function TTCCompanion:InitializeHooks()
+  if (not TTCCompanion.tradingHouseBrowseMarkerHooked) then
+    SecurePostHook(TRADING_HOUSE, "OpenTradingHouse", function()
       local oldCallback = ZO_TradingHouseBrowseItemsRightPaneSearchResults.dataTypes[1].setupCallback
-      TTCCompanion.markersHooked = true
       ZO_TradingHouseBrowseItemsRightPaneSearchResults.dataTypes[1].setupCallback = function(rowControl, slot)
         oldCallback(rowControl, slot)
         TTCCompanion:ToggleVendorMarker(rowControl, slot)
         if TTCCompanion.wwDetected and not TTCCompanion.mwimDetected then
-          TTCCompanion:ToggleWritMarker(rowControl, slot)
+          TTCCompanion:ToggleWritMarkerBrowseResults(rowControl, slot)
         end
       end
-    end
-  end)
+    end)
+  end
+  if (not TTCCompanion.inventoryMarkersHooked) then
+    local originalCall = ZO_PlayerInventoryList.dataTypes[1].setupCallback
+    SecurePostHook(ZO_PlayerInventoryList.dataTypes[1], "setupCallback", function(rowControl, slot)
+      originalCall(rowControl, slot)
+      if TTCCompanion.wwDetected and not TTCCompanion.mwimDetected then
+        TTCCompanion:ToggleWritMarkerInventoryList(rowControl, slot)
+      end
+    end)
+  end
+  TTCCompanion.tradingHouseBrowseMarkerHooked = true
+  TTCCompanion.inventoryMarkersHooked = false
 end
 
 function TTCCompanion:RemoveItemTooltip()
@@ -522,9 +563,10 @@ end
 function TTCCompanion.LocalizedNumber(amount)
   local function comma_value(amount)
     local formatted = amount
+    local count
     while true do
-      formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1' .. GetString(TTCC_THOUSANDS_SEP) .. '%2')
-      if (k == 0) then
+      formatted, count = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1' .. GetString(TTCC_THOUSANDS_SEP) .. '%2')
+      if (count == 0) then
         break
       end
     end
@@ -537,6 +579,66 @@ function TTCCompanion.LocalizedNumber(amount)
 
   -- Round to two decimal values
   return comma_value(zo_roundToNearest(amount, .01))
+end
+
+function TTCCompanion:GetTamrielTradeCentrePrice(itemLink)
+  local priceStats = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
+  if priceStats then priceStats.Avg = priceStats.Avg or 0 end
+  if priceStats then priceStats.SuggestedPrice = priceStats.SuggestedPrice or 0 end
+  if priceStats then priceStats.EntryCount = priceStats.EntryCount or 1 end
+  return priceStats
+end
+
+function TTCCompanion:GetTamrielTradeCentrePriceToUse(itemLink)
+  local priceStats = TTCCompanion:GetTamrielTradeCentrePrice(itemLink)
+  local ttcPrice = nil
+  if TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_SUGGESTED then
+    ttcPrice = priceStats and priceStats.SuggestedPrice or 0
+    if TTCCompanion.savedVariables.modifiedSuggestedPriceDealCalc then
+      ttcPrice = ttcPrice * 1.25
+    end
+  else
+    ttcPrice = priceStats and priceStats.Avg or 0
+  end
+  return ttcPrice
+end
+
+function TTCCompanion:SwitchInventoryPrice(control, slot)
+  local sellPriceControl = control:GetNamedChild("SellPrice")
+  if not sellPriceControl then return end
+  local controlData = control.dataEntry.data
+  if not TTCCompanion.savedVariables.replaceInventoryValues and not controlData.hasAlteredPrice then return end
+
+  local bagId = controlData.bagId
+  local slotIndex = controlData.slotIndex
+  local itemLink = GetItemLink(bagId, slotIndex)
+  if not itemLink then return end
+
+  if not TTCCompanion.savedVariables.replaceInventoryValues and controlData.hasAlteredPrice then
+    local _, sellPrice = GetItemLinkInfo(itemLink)
+    controlData.hasAlteredPrice = nil
+    controlData.sellPrice = sellPrice
+    controlData.stackSellPrice = sellPrice * controlData.stackCount
+    sellPriceControl:SetText(controlData.stackSellPrice)
+    return
+  end
+
+  local newSellPrice
+  local averagePrice = TTCCompanion:GetTamrielTradeCentrePriceToUse(itemLink)
+
+  if TTCCompanion.savedVariables.replaceInventoryValues and averagePrice then
+    controlData.hasAlteredPrice = true
+    controlData.sellPrice = averagePrice
+    controlData.stackSellPrice = averagePrice * controlData.stackCount
+
+    newSellPrice = TTCCompanion.LocalizedNumber(controlData.stackSellPrice)
+    if TTCCompanion.savedVariables.showUnitPrice then
+      newSellPrice = '|cEEEE33' .. newSellPrice .. '|r' .. TTCCompanion.coinIcon .. "\n" .. '|c1E7CFF' .. TTCCompanion.LocalizedNumber(averagePrice) .. '|r' .. TTCCompanion.coinIcon
+    else
+      newSellPrice = '|cEEEE33' .. newSellPrice .. '|r' .. TTCCompanion.coinIcon
+    end
+    sellPriceControl:SetText(newSellPrice)
+  end
 end
 
 TTCCompanion.dealCalcChoices = {
@@ -559,6 +661,12 @@ TTCCompanion.agsPercentSortValues = {
 local function CheckDealCalcValue()
   if TTCCompanion.savedVariables.dealCalcToUse ~= TTCCompanion.USE_TTC_SUGGESTED then
     TTCCompanion.savedVariables.modifiedSuggestedPriceDealCalc = false
+  end
+end
+
+local function CheckInventoryValue()
+  if TTCCompanion.savedVariables.replacementTypeToUse ~= TTCCompanion.USE_TTC_SUGGESTED then
+    TTCCompanion.savedVariables.modifiedSuggestedPriceInventory = false
   end
 end
 
@@ -585,7 +693,6 @@ function TTCCompanion:LibAddonInit()
     type = 'submenu',
     name = GetString(TTCC_DEALCALC_OPTIONS_NAME),
     tooltip = GetString(TTCC_DEALCALC_OPTIONS_TIP),
-    helpUrl = "https://esouimods.github.io/3-master_merchant.html#CustomDealCalculator",
     controls = {
       -- Enable DealCalc
       [1] = {
@@ -717,6 +824,54 @@ function TTCCompanion:LibAddonInit()
     default = TTCCompanion.savedVariables.showCalc,
     disabled = function() return TTCCompanion.AwesomeGuildStoreDetected end,
   }
+  -- Section: Inventory Options
+  optionsData[#optionsData + 1] = {
+    type = "header",
+    name = GetString(TTCC_INVENTORY_OPTIONS),
+    width = "full",
+  }
+  -- should we replace inventory values?
+  optionsData[#optionsData + 1] = {
+    type = 'checkbox',
+    name = GetString(TTCC_REPLACE_INVENTORY_VALUES_NAME),
+    tooltip = GetString(TTCC_REPLACE_INVENTORY_VALUES_TIP),
+    getFunc = function() return TTCCompanion.savedVariables.replaceInventoryValues end,
+    setFunc = function(value) TTCCompanion.savedVariables.replaceInventoryValues = value end,
+    default = TTCCompanion.systemDefault.replaceInventoryValues,
+  }
+  optionsData[#optionsData + 1] = {
+    type = 'checkbox',
+    name = GetString(TTCC_REPLACE_INVENTORY_SHOW_UNITPRICE_NAME),
+    tooltip = GetString(TTCC_REPLACE_INVENTORY_SHOW_UNITPRICE_TIP),
+    getFunc = function() return TTCCompanion.savedVariables.showUnitPrice end,
+    setFunc = function(value) TTCCompanion.savedVariables.showUnitPrice = value end,
+    default = TTCCompanion.systemDefault.showUnitPrice,
+    disabled = function() return not TTCCompanion.savedVariables.replaceInventoryValues end,
+  }
+  -- replace inventory value type
+  optionsData[#optionsData + 1] = {
+    type = 'dropdown',
+    name = GetString(TTCC_REPLACE_INVENTORY_VALUE_TYPE_NAME),
+    tooltip = GetString(TTCC_REPLACE_INVENTORY_VALUE_TYPE_TIP),
+    choices = TTCCompanion.dealCalcChoices,
+    choicesValues = TTCCompanion.dealCalcValues,
+    getFunc = function() return TTCCompanion.savedVariables.replacementTypeToUse end,
+    setFunc = function(value)
+      TTCCompanion.savedVariables.replacementTypeToUse = value
+      CheckInventoryValue()
+    end,
+    default = TTCCompanion.systemDefault.replacementTypeToUse,
+    disabled = function() return not TTCCompanion.savedVariables.replaceInventoryValues end,
+  }
+  optionsData[#optionsData + 1] = {
+    type = 'checkbox',
+    name = GetString(TTCC_REPLACE_INVENTORY_MODIFIEDTTC_NAME),
+    tooltip = GetString(TTCC_REPLACE_INVENTORY_MODIFIEDTTC_TIP),
+    getFunc = function() return TTCCompanion.savedVariables.modifiedSuggestedPriceInventory end,
+    setFunc = function(value) TTCCompanion.savedVariables.modifiedSuggestedPriceInventory = value end,
+    default = TTCCompanion.systemDefault.modifiedSuggestedPriceInventory,
+    disabled = function() return (not TTCCompanion.savedVariables.replaceInventoryValues) or (TTCCompanion.savedVariables.replacementTypeToUse ~= TTCCompanion.USE_TTC_SUGGESTED) end,
+  }
 
   -- And make the options panel
   LAM:RegisterOptionControls('TTCCompanionOptions', optionsData)
@@ -811,19 +966,53 @@ function TTCCompanion:Initialize()
     modifiedSuggestedPriceDealCalc = false,
     showMaterialCost = true,
     showProfitMargin = false,
-    showCalc = true,
+    showCalc = false,
     pricingData = {},
     pricingdatana = {},
     pricingdataeu = {},
+    replaceInventoryValues = false,
+    replacementTypeToUse = TTCCompanion.USE_TTC_SUGGESTED,
+    modifiedSuggestedPriceInventory = false,
+    showUnitPrice = false,
   }
   TTCCompanion.systemDefault = systemDefault
 
   TTCCompanion.savedVariables = ZO_SavedVars:NewAccountWide('TTCCompanion_SavedVars', 1, nil, systemDefault, nil)
 
+  TRADING_HOUSE_SCENE:RegisterCallback("StateChange", function(oldState, newState)
+    TTCCompanion:dm("Debug", "On StateChange")
+    if newState == SCENE_SHOWING then
+      TTCCompanion.tradingHouseOpened = true
+    elseif newState == SCENE_HIDDEN then
+      TTCCompanion.tradingHouseOpened = false
+    end
+  end)
+
   SetNamespace()
   TTCCompanion:SetupPriceCalculator()
   TTCCompanion:BuildRemovedItemIdTable()
   TTCCompanion:LibAddonInit()
+  TTCCompanion:InitializeHooks()
+
+  --Watch inventory listings
+  for _, i in pairs(PLAYER_INVENTORY.inventories) do
+    local listView = i.listView
+    if listView and listView.dataTypes and listView.dataTypes[1] then
+      local originalCall = listView.dataTypes[1].setupCallback
+
+      listView.dataTypes[1].setupCallback = function(control, slot)
+        originalCall(control, slot)
+        TTCCompanion:SwitchInventoryPrice(control, slot)
+      end
+    end
+  end
+
+  -- Watch Decon list
+  local originalCall = ZO_SmithingTopLevelDeconstructionPanelInventoryBackpack.dataTypes[1].setupCallback
+  SecurePostHook(ZO_SmithingTopLevelDeconstructionPanelInventoryBackpack.dataTypes[1], "setupCallback", function(control, slot)
+    originalCall(control, slot)
+    TTCCompanion:SwitchInventoryPrice(control, slot)
+  end)
 
   if not AwesomeGuildStore then
     EVENT_MANAGER:RegisterForEvent(TTCCompanion.name, EVENT_TRADING_HOUSE_PENDING_ITEM_UPDATE,

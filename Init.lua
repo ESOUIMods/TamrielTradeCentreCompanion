@@ -1,9 +1,11 @@
 TTCCompanion = { }
 TTCCompanion.name = 'TTCCompanion'
 TTCCompanion.addonName = 'TamrielTradeCentreCompanion'
-TTCCompanion.version = '1.01'
+TTCCompanion.version = '1.02'
 
-TTCCompanion.markersHooked = false
+TTCCompanion.tradingHouseBrowseMarkerHooked = false
+TTCCompanion.inventoryMarkersHooked = false
+TTCCompanion.tradingHouseOpened = false
 TTCCompanion.wwDetected = false
 TTCCompanion.mwimDetected = false
 TTCCompanion.isInitialized = false

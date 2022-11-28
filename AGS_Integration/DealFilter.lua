@@ -24,7 +24,7 @@ function TTCCompanion.InitDealFilterClass()
         {
           id = 1,
           label = GetString(AGS_OVERPRICED_LABEL),
-          icon = "TamrielTradeCentreCompanion/AGS_Integration/overpriced_%s.dds",
+          icon = "TamrielTradeCentreCompanion/img/overpriced_%s.dds",
         },
         {
           id = 2,
@@ -247,27 +247,6 @@ function TTCCompanion.DealCalculator(setPrice, salesCount, purchasePrice, stackC
   end
 
   return deal, margin, profit
-end
-
-function TTCCompanion:GetTamrielTradeCentrePrice(itemLink)
-  local priceStats = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
-  if priceStats then priceStats.Avg = priceStats.Avg or 0 end
-  if priceStats then priceStats.SuggestedPrice = priceStats.SuggestedPrice or 0 end
-  if priceStats then priceStats.EntryCount = priceStats.EntryCount or 1 end
-  return priceStats
-end
-
-function TTCCompanion:GetTamrielTradeCentrePriceToUse(itemLink)
-  local priceStats =TTCCompanion:GetTamrielTradeCentrePrice(itemLink)
-  if TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_SUGGESTED then
-    ttcPrice = priceStats and priceStats.SuggestedPrice or 0
-    if TTCCompanion.savedVariables.modifiedSuggestedPriceDealCalc then
-      ttcPrice = ttcPrice * 1.25
-    end
-  else
-    ttcPrice = priceStats and priceStats.Avg or 0
-  end
-  return ttcPrice
 end
 
 -- /script d(TTCCompanion.GetDealInformation("|H1:item:182625:4:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h", 10000, 2))
