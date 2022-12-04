@@ -8,8 +8,8 @@
 ## APIVersion: 101035 101036
 ## Description: Tools from Master Merchant to assist with Tamriel Trade Centre users
 ## Authors: Sharlikran
-## Version: 1.02
-## AddOnVersion: 102
+## Version: 1.03
+## AddOnVersion: 103
 ## SavedVariables: TTCCompanion_SavedVars
 ## DependsOn: TamrielTradeCentre LibAddonMenu-2.0>=34
 ## OptionalDependsOn: DebugLogViewer>=558 AwesomeGuildStore>=3079 MasterWritInventoryMarker
@@ -25,4 +25,5 @@ AGS_Integration\DealFilter.lua
 AGS_Integration\DealFilterFragment.lua
 AGS_Integration\SortOrderDealPercent.lua
 TTCCompanion_Writs.lua
+TTCCompanion_Inventory.lua
 TTCCompanion_Main.lua

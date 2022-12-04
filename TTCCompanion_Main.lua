@@ -581,64 +581,18 @@ function TTCCompanion.LocalizedNumber(amount)
   return comma_value(zo_roundToNearest(amount, .01))
 end
 
-function TTCCompanion:GetTamrielTradeCentrePrice(itemLink)
-  local priceStats = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
-  if priceStats then priceStats.Avg = priceStats.Avg or 0 end
-  if priceStats then priceStats.SuggestedPrice = priceStats.SuggestedPrice or 0 end
-  if priceStats then priceStats.EntryCount = priceStats.EntryCount or 1 end
-  return priceStats
-end
-
 function TTCCompanion:GetTamrielTradeCentrePriceToUse(itemLink)
-  local priceStats = TTCCompanion:GetTamrielTradeCentrePrice(itemLink)
-  local ttcPrice = nil
+  local priceStats = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
+  local ttcPrice
   if TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_SUGGESTED then
-    ttcPrice = priceStats and priceStats.SuggestedPrice or 0
-    if TTCCompanion.savedVariables.modifiedSuggestedPriceDealCalc then
+    if priceStats and priceStats.SuggestedPrice then ttcPrice = priceStats.SuggestedPrice end
+    if ttcPrice and TTCCompanion.savedVariables.modifiedSuggestedPriceDealCalc then
       ttcPrice = ttcPrice * 1.25
     end
   else
-    ttcPrice = priceStats and priceStats.Avg or 0
+    if priceStats and priceStats.Avg then ttcPrice = priceStats.Avg end
   end
   return ttcPrice
-end
-
-function TTCCompanion:SwitchInventoryPrice(control, slot)
-  local sellPriceControl = control:GetNamedChild("SellPrice")
-  if not sellPriceControl then return end
-  local controlData = control.dataEntry.data
-  if not TTCCompanion.savedVariables.replaceInventoryValues and not controlData.hasAlteredPrice then return end
-
-  local bagId = controlData.bagId
-  local slotIndex = controlData.slotIndex
-  local itemLink = GetItemLink(bagId, slotIndex)
-  if not itemLink then return end
-
-  if not TTCCompanion.savedVariables.replaceInventoryValues and controlData.hasAlteredPrice then
-    local _, sellPrice = GetItemLinkInfo(itemLink)
-    controlData.hasAlteredPrice = nil
-    controlData.sellPrice = sellPrice
-    controlData.stackSellPrice = sellPrice * controlData.stackCount
-    sellPriceControl:SetText(controlData.stackSellPrice)
-    return
-  end
-
-  local newSellPrice
-  local averagePrice = TTCCompanion:GetTamrielTradeCentrePriceToUse(itemLink)
-
-  if TTCCompanion.savedVariables.replaceInventoryValues and averagePrice then
-    controlData.hasAlteredPrice = true
-    controlData.sellPrice = averagePrice
-    controlData.stackSellPrice = averagePrice * controlData.stackCount
-
-    newSellPrice = TTCCompanion.LocalizedNumber(controlData.stackSellPrice)
-    if TTCCompanion.savedVariables.showUnitPrice then
-      newSellPrice = '|cEEEE33' .. newSellPrice .. '|r' .. TTCCompanion.coinIcon .. "\n" .. '|c1E7CFF' .. TTCCompanion.LocalizedNumber(averagePrice) .. '|r' .. TTCCompanion.coinIcon
-    else
-      newSellPrice = '|cEEEE33' .. newSellPrice .. '|r' .. TTCCompanion.coinIcon
-    end
-    sellPriceControl:SetText(newSellPrice)
-  end
 end
 
 TTCCompanion.dealCalcChoices = {
@@ -980,7 +934,7 @@ function TTCCompanion:Initialize()
   TTCCompanion.savedVariables = ZO_SavedVars:NewAccountWide('TTCCompanion_SavedVars', 1, nil, systemDefault, nil)
 
   TRADING_HOUSE_SCENE:RegisterCallback("StateChange", function(oldState, newState)
-    TTCCompanion:dm("Debug", "On StateChange")
+    --TTCCompanion:dm("Debug", "On StateChange")
     if newState == SCENE_SHOWING then
       TTCCompanion.tradingHouseOpened = true
     elseif newState == SCENE_HIDDEN then
@@ -995,30 +949,31 @@ function TTCCompanion:Initialize()
   TTCCompanion:InitializeHooks()
 
   --Watch inventory listings
+  ZO_SharedInventoryManager.CreateOrUpdateSlotData = TTCCompanion.CreateOrUpdateSlotData
   for _, i in pairs(PLAYER_INVENTORY.inventories) do
     local listView = i.listView
     if listView and listView.dataTypes and listView.dataTypes[1] then
       local originalCall = listView.dataTypes[1].setupCallback
 
-      listView.dataTypes[1].setupCallback = function(control, slot)
-        originalCall(control, slot)
-        TTCCompanion:SwitchInventoryPrice(control, slot)
+      listView.dataTypes[1].setupCallback = function(rowControl, slot)
+        originalCall(rowControl, slot)
+        TTCCompanion:SetInventorySellPriceText(rowControl, slot)
       end
     end
   end
 
   -- Watch Decon list
   local originalCall = ZO_SmithingTopLevelDeconstructionPanelInventoryBackpack.dataTypes[1].setupCallback
-  SecurePostHook(ZO_SmithingTopLevelDeconstructionPanelInventoryBackpack.dataTypes[1], "setupCallback", function(control, slot)
-    originalCall(control, slot)
-    TTCCompanion:SwitchInventoryPrice(control, slot)
+  SecurePostHook(ZO_SmithingTopLevelDeconstructionPanelInventoryBackpack.dataTypes[1], "setupCallback", function(rowControl, slot)
+    originalCall(rowControl, slot)
+    TTCCompanion:SetInventorySellPriceText(rowControl, slot)
   end)
 
   if not AwesomeGuildStore then
     EVENT_MANAGER:RegisterForEvent(TTCCompanion.name, EVENT_TRADING_HOUSE_PENDING_ITEM_UPDATE,
       function(eventCode, slotId, isPending)
-        if TTCCompanion.savedVariables.showCalc and isPending and GetSlotStackSize(1, slotId) > 1 then
-          local theLink = GetItemLink(1, slotId, LINK_STYLE_DEFAULT)
+        if TTCCompanion.savedVariables.showCalc and isPending and GetSlotStackSize(BAG_BACKPACK, slotId) > 1 then
+          local theLink = GetItemLink(BAG_BACKPACK, slotId, LINK_STYLE_DEFAULT)
           local priceData = nil
           priceData = TTCCompanion.GetPricingData(theLink)
           if not priceData then

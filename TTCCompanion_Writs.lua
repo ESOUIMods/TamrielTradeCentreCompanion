@@ -222,7 +222,7 @@ function TTCCompanion:MaterialCostPrice(itemLink)
     for i = 1, numIngredients do
       local ingredientItemLink, numRequired = TTCCompanion.GetItemLinkRecipeIngredientInfo(newLifeFestivalItemLink, i)
       if ingredientItemLink then
-        local ttcPrice = TTCCompanion:GetTamrielTradeCentrePriceToUse(itemLink)
+        local ttcPrice = TTCCompanion:GetTamrielTradeCentrePriceToUse(itemLink) or 0
         cost = cost + (ttcPrice * numRequired)
       end
     end
