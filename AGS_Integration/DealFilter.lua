@@ -258,14 +258,14 @@ TTCCompanion.GetDealInformation = function(itemLink, purchasePrice, stackCount)
     local setPrice = nil
     local salesCount = 0
     if TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_AVERAGE and TamrielTradeCentre then
-      local priceStats = TTCCompanion:GetTamrielTradeCentrePrice(itemLink)
+      local priceStats = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
       if priceStats and priceStats.Avg > 0 then
         setPrice = priceStats.Avg
         salesCount = priceStats.EntryCount
       end
     end
     if TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_SUGGESTED and TamrielTradeCentre then
-      local priceStats = TTCCompanion:GetTamrielTradeCentrePrice(itemLink)
+      local priceStats = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
       if priceStats and priceStats.SuggestedPrice > 0 then
         setPrice = priceStats.SuggestedPrice
         if TTCCompanion.savedVariables.modifiedSuggestedPriceDealCalc then
