@@ -257,23 +257,11 @@ TTCCompanion.GetDealInformation = function(itemLink, purchasePrice, stackCount)
   if (not TTCCompanion.dealInfoCache[key]) then
     local setPrice = nil
     local salesCount = 0
-    if TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_AVERAGE and TamrielTradeCentre then
-      local priceStats = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
-      if priceStats and priceStats.Avg > 0 then
-        setPrice = priceStats.Avg
-        salesCount = priceStats.EntryCount
-      end
-    end
-    if TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_SUGGESTED and TamrielTradeCentre then
-      local priceStats = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
-      if priceStats and priceStats.SuggestedPrice > 0 then
-        setPrice = priceStats.SuggestedPrice
-        if TTCCompanion.savedVariables.modifiedSuggestedPriceDealCalc then
-          setPrice = priceStats.SuggestedPrice * 1.25
-        end
-        salesCount = priceStats.EntryCount
-      end
-    end
+    local priceStats = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
+    if TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_AVERAGE and priceStats and priceStats.Avg then setPrice = priceStats.Avg end
+    if TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_SUGGESTED and priceStats and priceStats.SuggestedPrice then setPrice = priceStats.SuggestedPrice end
+    if setPrice and priceStats and priceStats.EntryCount then salesCount = priceStats.EntryCount end
+    if TTCCompanion.savedVariables.modifiedSuggestedPriceDealCalc and setPrice then setPrice = setPrice * 1.25 end
     TTCCompanion.dealInfoCache[key] = { TTCCompanion.DealCalculator(setPrice, salesCount, purchasePrice, stackCount) }
   end
   return unpack(TTCCompanion.dealInfoCache[key])
