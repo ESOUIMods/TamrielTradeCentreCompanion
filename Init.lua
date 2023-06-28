@@ -1,7 +1,7 @@
 TTCCompanion = { }
 TTCCompanion.name = 'TTCCompanion'
 TTCCompanion.addonName = 'TamrielTradeCentreCompanion'
-TTCCompanion.version = '1.05'
+TTCCompanion.version = '1.06'
 
 TTCCompanion.tradingHouseBrowseMarkerHooked = false
 TTCCompanion.inventoryMarkersHooked = false
@@ -36,28 +36,31 @@ else
   TTCCompanion.AwesomeGuildStoreDetected = false -- added 12-2
 end
 
+TTCCompanion.show_log = false
 if LibDebugLogger then
-  local logger = LibDebugLogger.Create(TTCCompanion.name)
-  TTCCompanion.logger = logger
+  TTCCompanion.logger = LibDebugLogger.Create(TTCCompanion.name)
 end
-local SDLV = DebugLogViewer
-if SDLV then TTCCompanion.viewer = true else TTCCompanion.viewer = false end
+local logger
+local viewer
+if DebugLogViewer then viewer = true else viewer = false end
+if LibDebugLogger then logger = true else logger = false end
 
 local function create_log(log_type, log_content)
-  if not TTCCompanion.viewer and log_type == "Info" then
+  if not viewer and log_type == "Info" then
     CHAT_ROUTER:AddSystemMessage(log_content)
     return
   end
-  if log_type == "Debug" then
+  if not TTCCompanion.show_log then return end
+  if logger and log_type == "Debug" then
     TTCCompanion.logger:Debug(log_content)
   end
-  if log_type == "Info" then
+  if logger and log_type == "Info" then
     TTCCompanion.logger:Info(log_content)
   end
-  if log_type == "Verbose" then
+  if logger and log_type == "Verbose" then
     TTCCompanion.logger:Verbose(log_content)
   end
-  if log_type == "Warn" then
+  if logger and log_type == "Warn" then
     TTCCompanion.logger:Warn(log_content)
   end
 end

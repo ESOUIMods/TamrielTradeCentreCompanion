@@ -29,27 +29,27 @@ function TTCCompanion.InitDealFilterClass()
         {
           id = 2,
           label = GetString(AGS_OKAY_LABEL),
-          icon = "AwesomeGuildStore/images/qualitybuttons/normal_%s.dds",
+          icon = "TamrielTradeCentreCompanion/img/normal_%s.dds",
         },
         {
           id = 3,
           label = GetString(AGS_REASONABLE_LABEL),
-          icon = "AwesomeGuildStore/images/qualitybuttons/magic_%s.dds",
+          icon = "TamrielTradeCentreCompanion/img/magic_%s.dds",
         },
         {
           id = 4,
           label = GetString(AGS_GOOD_LABEL),
-          icon = "AwesomeGuildStore/images/qualitybuttons/arcane_%s.dds",
+          icon = "TamrielTradeCentreCompanion/img/arcane_%s.dds",
         },
         {
           id = 5,
           label = GetString(AGS_GREAT_LABEL),
-          icon = "AwesomeGuildStore/images/qualitybuttons/artifact_%s.dds",
+          icon = "TamrielTradeCentreCompanion/img/artifact_%s.dds",
         },
         {
           id = 6,
           label = GetString(AGS_BUYIT_LABEL),
-          icon = "AwesomeGuildStore/images/qualitybuttons/legendary_%s.dds",
+          icon = "TamrielTradeCentreCompanion/img/legendary_%s.dds",
         }
       }
     })

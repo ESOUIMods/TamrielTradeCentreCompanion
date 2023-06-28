@@ -301,93 +301,175 @@ function TTCCompanion:GeneratePopupTooltip(Popup)
   TTCCompanion:GenerateTooltip(Popup, Popup.ttccActiveTip)
 end
 
+function TTCCompanion:SetCrafted(itemLink)
+  local linkParse = { ZO_LinkHandler_ParseLink(itemLink) }
+  local craftedlink = string.format("|H1:item:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s|h|h", linkParse[4],
+    linkParse[5], linkParse[6], linkParse[7], linkParse[8], linkParse[9], linkParse[10], linkParse[11],
+    linkParse[12], linkParse[13], linkParse[14], linkParse[15], linkParse[16], linkParse[17], linkParse[18],
+    linkParse[19], "1", linkParse[21], linkParse[22], linkParse[23], linkParse[24])
+  return craftedlink
+end
+
+function TTCCompanion:SetLevelAndQuality(itemLink)
+  local linkParse = { ZO_LinkHandler_ParseLink(itemLink) }
+  local itemLevel = GetItemLinkDisplayQuality(itemLink) + 1
+  local craftedlink = string.format("|H1:item:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s|h|h", linkParse[4],
+    itemLevel, "1", linkParse[7], linkParse[8], linkParse[9], linkParse[10], linkParse[11],
+    linkParse[12], linkParse[13], linkParse[14], linkParse[15], linkParse[16], linkParse[17], linkParse[18],
+    linkParse[19], linkParse[20], linkParse[21], linkParse[22], linkParse[23], linkParse[24])
+  return craftedlink
+end
+
 function TTCCompanion:GenerateItemTooltip()
   if not TTCCompanion.isInitialized then return end
   -- TTCCompanion:dm("Debug", "GenerateItemTooltip")
   local showTooltipInformation = (TTCCompanion.savedVariables.showMaterialCost)
-  local skMoc = moc()
+  -- local skMoc = moc()
+  local mouseOverControl = moc()
   -- Make sure we don't double-add stats or try to add them to nothing
   -- Since we call this on Update rather than Show it gets called a lot
   -- even after the tip appears
-  if not showTooltipInformation or (not skMoc or not skMoc:GetParent()) or (skMoc == TTCCompanion.tippingControl) then
+  if not showTooltipInformation or (not mouseOverControl or not mouseOverControl:GetParent()) or (mouseOverControl == TTCCompanion.tippingControl) then
     return
   end
 
   local itemLink = nil
   local purchasePrice = nil
   local stackCount = nil
-  local mocParent = skMoc:GetParent():GetName()
+  local mouseOverControlParent
+  local mouseOverControlGrandparent
+  local mocOwner
 
-  -- Store screen
-  if mocParent == 'ZO_StoreWindowListContents' then
-    itemLink = GetStoreItemLink(skMoc.index)
-    -- Store buyback screen
-  elseif mocParent == 'ZO_BuyBackListContents' then
-    itemLink = GetBuybackItemLink(skMoc.index)
-    -- Guild store posted items
-  elseif mocParent == 'ZO_TradingHousePostedItemsListContents' then
-    local mocData = skMoc.dataEntry and skMoc.dataEntry.data or nil
-    if not mocData then return end
-    itemLink = GetTradingHouseListingItemLink(mocData.slotIndex)
-    purchasePrice = mocData.purchasePrice
-    stackCount = mocData.stackCount
-    -- Guild store search
-  elseif mocParent == 'ZO_TradingHouseItemPaneSearchResultsContents' then
-    local rData = skMoc.dataEntry and skMoc.dataEntry.data or nil
-    -- The only thing with 0 time remaining should be guild tabards, no
-    -- stats on those!
-    if not rData or rData.timeRemaining == 0 then return end
-    itemLink = GetTradingHouseSearchResultItemLink(rData.slotIndex)
-    -- Guild store item posting
-  elseif mocParent == 'ZO_TradingHouseLeftPanePostItemFormInfo' then
-    if skMoc.slotIndex and skMoc.bagId then itemLink = GetItemLink(skMoc.bagId, skMoc.slotIndex) end
-    -- Player bags (and bank) (and crafting tables)
-  elseif mocParent == 'ZO_PlayerInventoryBackpackContents' or
-    mocParent == 'ZO_PlayerInventoryListContents' or
-    mocParent == 'ZO_CraftBagListContents' or
-    mocParent == 'ZO_QuickSlotListContents' or
-    mocParent == 'ZO_PlayerBankBackpackContents' or
-    mocParent == 'ZO_HouseBankBackpackContents' or
-    mocParent == 'ZO_SmithingTopLevelImprovementPanelInventoryBackpackContents' or
-    mocParent == 'ZO_SmithingTopLevelDeconstructionPanelInventoryBackpackContents' or
-    mocParent == 'ZO_SmithingTopLevelRefinementPanelInventoryBackpackContents' or
-    mocParent == 'ZO_EnchantingTopLevelInventoryBackpackContents' or
-    mocParent == 'ZO_GuildBankBackpackContents' or
-    mocParent == 'ZO_CompanionEquipment_Panel_KeyboardListContents' then
-    if skMoc and skMoc.dataEntry then
-      local rData = skMoc.dataEntry.data
-      itemLink = GetItemLink(rData.bagId, rData.slotIndex)
+  if mouseOverControl.GetParent then mouseOverControlParent = mouseOverControl:GetParent() end
+  if mouseOverControlParent and mouseOverControlParent.GetParent then mouseOverControlGrandparent = mouseOverControlParent:GetParent() end
+  if mouseOverControl and mouseOverControl.GetOwningWindow then mocOwner = mouseOverControl:GetOwningWindow() end
+
+  local mocName = mouseOverControl:GetName()
+  local mocParentName
+  local mocGPName
+  local mocOwnerName
+
+  if mouseOverControlParent then mocParentName = mouseOverControlParent:GetName() end
+  if mouseOverControlGrandparent then mocGPName = mouseOverControlGrandparent:GetName() end
+  if mocOwner then mocOwnerName = mocOwner:GetName() end
+
+  local hasDataEntryData = mouseOverControl and mouseOverControl.dataEntry and mouseOverControl.dataEntry.data
+  local hasParentData = mouseOverControlParent and mouseOverControlParent.data
+  local hasMocData = mouseOverControl and mouseOverControl.data
+
+  if mocParentName == 'ZO_CraftBagListContents' or
+    mocParentName == 'ZO_PlayerInventoryListContents' or
+    mocParentName == 'ZO_EnchantingTopLevelInventoryBackpackContents' or
+    mocParentName == 'ZO_SmithingTopLevelRefinementPanelInventoryBackpackContents' or
+    mocParentName == 'ZO_SmithingTopLevelDeconstructionPanelInventoryBackpackContents' or
+    mocParentName == 'ZO_SmithingTopLevelImprovementPanelInventoryBackpackContents' or
+    mocParentName == 'ZO_QuickSlot_Keyboard_TopLevelListContents' or
+    mocParentName == 'ZO_PlayerBankBackpackContents' or
+    mocParentName == 'ZO_GuildBankBackpackContents' or
+    mocParentName == 'ZO_HouseBankBackpackContents' or
+    mocParentName == 'ZO_UniversalDeconstructionTopLevel_KeyboardPanelInventoryBackpackContents' or
+    mocParentName == 'ZO_CompanionEquipment_Panel_KeyboardListContents' then
+    if not hasDataEntryData then return end
+    local rowData = mouseOverControl.dataEntry.data
+    itemLink = GetItemLink(rowData.bagId, rowData.slotIndex, LINK_STYLE_BRACKETS)
+
+  elseif mocParentName == "ZO_Character" then
+    -- is worn item
+    itemLink = GetItemLink(mouseOverControl.bagId, mouseOverControl.slotIndex, LINK_STYLE_BRACKETS)
+
+  elseif mocParentName == "ZO_CompanionCharacterWindow_Keyboard_TopLevel" then
+    -- is worn item
+    itemLink = GetItemLink(mouseOverControl.bagId, mouseOverControl.slotIndex, LINK_STYLE_BRACKETS)
+
+  elseif mocParentName == "ZO_LootAlphaContainerListContents" then
+    -- is loot item
+    if not hasDataEntryData then return end
+    local rowData = mouseOverControl.dataEntry.data
+    itemLink = GetLootItemLink(rowData.lootId, LINK_STYLE_BRACKETS)
+
+  elseif mocParentName == "ZO_BuyBackListContents" then
+    -- is buyback item
+    itemLink = GetBuybackItemLink(mouseOverControl.index, LINK_STYLE_BRACKETS)
+
+  elseif mocParentName == "ZO_StoreWindowListContents" then
+    -- is store item
+    local collectibleId = GetStoreCollectibleInfo(mouseOverControl.index)
+    local isCollectible = collectibleId and collectibleId > 0
+    if isCollectible then return end
+    itemLink = GetStoreItemLink(mouseOverControl.index, LINK_STYLE_BRACKETS)
+
+  elseif mocParentName == 'ZO_MailInboxMessageAttachments' then
+    -- MAIL_INBOX:GetOpenMailId() is the id64 of the mail
+    itemLink = GetAttachedItemLink(MAIL_INBOX:GetOpenMailId(), mouseOverControl.id, LINK_STYLE_DEFAULT)
+
+  elseif mocParentName == 'ZO_MailSendAttachments' then
+    itemLink = GetMailQueuedAttachmentLink(mouseOverControl.id, LINK_STYLE_DEFAULT)
+
+    -- following 4 if's derived directly from MasterMerchant
+  elseif mocOwnerName == 'MasterMerchantWindow' or
+    mocOwnerName == 'MasterMerchantGuildWindow' or
+    mocOwnerName == 'MasterMerchantPurchaseWindow' or
+    mocOwnerName == 'MasterMerchantListingWindow' or
+    mocOwnerName == 'MasterMerchantFilterByNameWindow' or
+    mocOwnerName == 'MasterMerchantReportsWindow' then
+    if mouseOverControl.GetText then
+      itemLink = mouseOverControl:GetText()
     end
-    -- Worn equipment
-  elseif mocParent == 'ZO_Character' or
-    mocParent == 'ZO_CompanionCharacterWindow_Keyboard_TopLevel' then
-    itemLink = GetItemLink(skMoc.bagId, skMoc.slotIndex)
-    -- Furniture Catalogue
-  elseif mocParent == 'FurCGui_ListHolder' then
-    itemLink = skMoc.itemLink
-    -- Loot window if autoloot is disabled
-  elseif mocParent == 'ZO_LootAlphaContainerListContents' then
-    if not skMoc.dataEntry then return end
-    local data = skMoc.dataEntry.data
-    itemLink = GetLootItemLink(data.lootId, LINK_STYLE_BRACKETS)
-  elseif mocParent == 'ZO_MailInboxMessageAttachments' then itemLink = GetAttachedItemLink(MAIL_INBOX:GetOpenMailId(),
-    skMoc.id, LINK_STYLE_DEFAULT)
-  elseif mocParent == 'ZO_MailSendAttachments' then itemLink = GetMailQueuedAttachmentLink(skMoc.id, LINK_STYLE_DEFAULT)
-  elseif mocParent == 'IIFA_GUI_ListHolder' then itemLink = skMoc.itemLink
-  elseif mocParent == 'ZO_TradingHouseBrowseItemsRightPaneSearchResultsContents' then
-    local rData = skMoc.dataEntry and skMoc.dataEntry.data or nil
-    -- The only thing with 0 time remaining should be guild tabards, no
-    -- stats on those!
-    if not rData or rData.timeRemaining == 0 then return end
-    purchasePrice = rData.purchasePrice
-    stackCount = rData.stackCount
-    itemLink = GetTradingHouseSearchResultItemLink(rData.slotIndex)
-    --elseif mocParent == 'ZO_SmithingTopLevelImprovementPanelSlotContainer' then itemLink
-    --d(skMoc)
+
+  elseif mocOwnerName == "IIFA_GUI" then
+    itemLink = mouseOverControl.itemLink
+
+  elseif mocOwnerName == "FurCGui" then
+    itemLink = TTCCompanion:SetLevelAndQuality(mouseOverControl.itemLink)
+
+  elseif mocParentName == "ZO_TradingHouseBrowseItemsRightPaneSearchResultsContents" then
+    if not hasDataEntryData then return end
+    local rowData = mouseOverControl.dataEntry.data
+    if not rowData or rowData.timeRemaining == 0 then return end
+    purchasePrice = rowData.purchasePrice
+    stackCount = rowData.stackCount
+    itemLink = GetTradingHouseSearchResultItemLink(rowData.slotIndex)
+
+  elseif mocParentName == "ZO_TradingHousePostedItemsListContents" then
+    if not hasDataEntryData then return end
+    local rowData = mouseOverControl.dataEntry.data
+    if not rowData or rowData.timeRemaining == 0 then return end
+    purchasePrice = rowData.purchasePrice
+    stackCount = rowData.stackCount
+    itemLink = GetTradingHouseListingItemLink(rowData.slotIndex)
+
+  elseif mocParentName == 'DolgubonSetCrafterWindowMaterialListListContents' then
+    if not hasMocData then return end
+    local rowData = mouseOverControl.data[1]
+    if not rowData then return end
+    itemLink = rowData.Name
+
+  elseif mocGPName == "CraftingQueueScrollListContents" then
+    if not hasParentData then return end
+    local rowData = mouseOverControlParent.data[1]
+    local rowDataLink = rowData.Link
+    if not rowDataLink then return end
+    itemLink = TTCCompanion:SetCrafted(rowDataLink)
+
+  elseif mocParentName == "ZO_InteractWindowRewardArea" then
+    -- is reward item
+    itemLink = GetQuestRewardItemLink(mouseOverControl.index, LINK_STYLE_BRACKETS)
+
+  elseif mocOwnerName == 'CraftStoreFixed_Cook' or
+    mocOwnerName == 'CraftStoreFixed_Rune' or
+    mocOwnerName == 'CraftStoreFixed_Blueprint_Window' then
+    if not hasMocData then return end
+    local rowData = mouseOverControl.data
+    itemLink = rowData.link
+
+  elseif mocOwnerName == 'ZO_ClaimLevelUpRewardsScreen_Keyboard' then
+    if not hasMocData then return end
+    local rowData = mouseOverControl.data
+    itemLink = rowData.itemLink
   end
 
   if itemLink then
-    if TTCCompanion.tippingControl ~= skMoc then
+    if TTCCompanion.tippingControl ~= mouseOverControl then
       if ItemTooltip.tooltipTextPool then
         ItemTooltip.tooltipTextPool:ReleaseAllObjects()
       end
@@ -397,7 +479,7 @@ function TTCCompanion:GenerateItemTooltip()
       ItemTooltip.mmMatText = nil
     end
 
-    TTCCompanion.tippingControl = skMoc
+    TTCCompanion.tippingControl = mouseOverControl
     TTCCompanion:GenerateTooltip(ItemTooltip, itemLink, purchasePrice, stackCount)
   end
 
@@ -631,7 +713,7 @@ function TTCCompanion:LibAddonInit()
     type = 'panel',
     name = 'TTCCompanion',
     displayName = "Tamriel Trade Centre Companion",
-    author = "Sharlikran",
+    author = "|cFF9B15Sharlikran|r",
     version = TTCCompanion.version,
     website = "https://www.esoui.com/downloads/info3509-TamrielTradeCentreCompanion.html",
     feedback = "https://www.esoui.com/downloads/info3509-TamrielTradeCentreCompanion.html",
