@@ -2,7 +2,7 @@ local function GetCleanPrice(price)
   if IsInGamepadPreferredMode() then
     return tonumber(string.format('%.0f', price))
   else
-    return tonumber(string.format('%.2f', price))
+    return tonumber(string.format('%.0f', price))
   end
 end
 

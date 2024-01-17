@@ -1044,12 +1044,19 @@ function TTCCompanion:Initialize()
     end
   end
 
-  -- Watch Decon list
-  local originalCall = ZO_SmithingTopLevelDeconstructionPanelInventoryBackpack.dataTypes[1].setupCallback
-  SecurePostHook(ZO_SmithingTopLevelDeconstructionPanelInventoryBackpack.dataTypes[1], "setupCallback", function(rowControl, slot)
-    originalCall(rowControl, slot)
-    TTCCompanion:SetInventorySellPriceText(rowControl, slot)
-  end)
+  -- Watch Decon lists
+  local backpacks = {
+    ZO_SmithingTopLevelDeconstructionPanelInventoryBackpack,
+    ZO_UniversalDeconstructionTopLevel_KeyboardPanelInventoryBackpack,
+  }
+  for i = 1, #backpacks do
+    local oldCallback = backpacks[i].dataTypes[1].setupCallback
+
+    backpacks[i].dataTypes[1].setupCallback = function(rowControl, slot)
+      oldCallback(rowControl, slot)
+      TTCCompanion:SetInventorySellPriceText(rowControl, slot)
+    end
+  end
 
   if not AwesomeGuildStore then
     EVENT_MANAGER:RegisterForEvent(TTCCompanion.name, EVENT_TRADING_HOUSE_PENDING_ITEM_UPDATE,
