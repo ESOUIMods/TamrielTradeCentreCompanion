@@ -36,6 +36,7 @@ end
 function TTCCompanion:SetInventorySellPriceText(rowControl, slot)
   if not TTCCompanion.isInitialized then return end
   local sellPriceControl = rowControl:GetNamedChild("SellPrice")
+  local sellPriceLabel = sellPriceControl:GetNamedChild("Text")
   if not sellPriceControl then return end
   slot = AddAlteredInventorySellPrice(slot)
 
@@ -43,12 +44,12 @@ function TTCCompanion:SetInventorySellPriceText(rowControl, slot)
     slot.sellPrice = slot.alteredSellPrice
     slot.stackSellPrice = slot.alteredStackSellPrice
     local newSellPrice = GetInventoryPriceText(slot.sellPrice, slot.stackSellPrice)
-    sellPriceControl:SetText(newSellPrice)
+    sellPriceLabel:SetText(newSellPrice)
   elseif slot.hasAlteredPrice and not TTCCompanion.savedVariables.replaceInventoryValues then
     slot.sellPrice = slot.originalSellPrice
     slot.stackSellPrice = slot.originalStackSellPrice
     local newSellPrice = slot.stackSellPrice .. TTCCompanion.coinIcon
-    sellPriceControl:SetText(newSellPrice)
+    sellPriceLabel:SetText(newSellPrice)
   end
 end
 
@@ -117,6 +118,8 @@ function TTCCompanion:CreateOrUpdateSlotData(existingSlotData, bagId, slotIndex,
   slot.quality = displayQuality
   slot.equipType = equipType
   slot.isPlayerLocked = IsItemPlayerLocked(bagId, slotIndex)
+  slot.isLockedSetPiece = IsItemLockedSetPiece(bagId, slotIndex)
+  slot.canBeUsedToLearn = CanItemBeUsedToLearn(bagId, slotIndex)
   slot.isBoPTradeable = IsItemBoPAndTradeable(bagId, slotIndex)
   slot.isJunk = IsItemJunk(bagId, slotIndex)
   slot.statValue = GetItemStatValue(bagId, slotIndex) or 0

@@ -1,4 +1,5 @@
 local LAM = LibAddonMenu2
+local LMP = LibMediaProvider
 local OriginalSetupPendingPost
 
 function TTCCompanion:GetMeetsRequirements(itemLink)
@@ -521,7 +522,8 @@ function TTCCompanion.AddSellingAdvice(rowControl, result)
     anchorControl:SetAnchor(point, relTo, relPoint, offsX, offsY - 10)
 
     sellingAdvice:SetAnchor(TOPLEFT, anchorControl, BOTTOMLEFT, 0, 0)
-    sellingAdvice:SetFont('/esoui/common/fonts/univers67.otf|14|soft-shadow-thin')
+    local fontString = LMP:Fetch('font', "Univers 67")
+    sellingAdvice:SetFont(fontString .. '|14|soft-shadow-thin')
   end
 
   --[[TODO make sure that the itemLink is not an empty string by mistake
@@ -610,7 +612,8 @@ function TTCCompanion.AddBuyingAdvice(rowControl, result)
     anchorControl:ClearAnchors()
     anchorControl:SetAnchor(point, relTo, relPoint, offsX, offsY - 10)
     buyingAdvice:SetAnchor(TOPLEFT, anchorControl, BOTTOMLEFT, 0, 0)
-    buyingAdvice:SetFont('/esoui/common/fonts/univers67.otf|14|soft-shadow-thin')
+    local fontString = LMP:Fetch('font', "Univers 67")
+    buyingAdvice:SetFont(fontString .. '|14|soft-shadow-thin')
   end
 
   local index = result.slotIndex
@@ -671,8 +674,10 @@ function TTCCompanion:GetTamrielTradeCentrePriceToUse(itemLink)
     if ttcPrice and TTCCompanion.savedVariables.modifiedSuggestedPriceDealCalc then
       ttcPrice = ttcPrice * 1.25
     end
-  else
+  elseif TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_AVERAGE then
     if priceStats and priceStats.Avg then ttcPrice = priceStats.Avg end
+  elseif TTCCompanion.savedVariables.dealCalcToUse == TTCCompanion.USE_TTC_SALES then
+    if priceStats and priceStats.SaleAvg then ttcPrice = priceStats.SaleAvg end
   end
   return ttcPrice
 end
@@ -680,10 +685,12 @@ end
 TTCCompanion.dealCalcChoices = {
   GetString(TTCC_DEAL_CALC_TTC_SUGGESTED),
   GetString(TTCC_DEAL_CALC_TTC_AVERAGE),
+  GetString(TTCC_DEAL_CALC_TTC_SALES),
 }
 TTCCompanion.dealCalcValues = {
   TTCCompanion.USE_TTC_SUGGESTED,
   TTCCompanion.USE_TTC_AVERAGE,
+  TTCCompanion.USE_TTC_SALES,
 }
 TTCCompanion.agsPercentSortChoices = {
   GetString(AGS_PERCENT_ORDER_ASCENDING),
@@ -1001,6 +1008,7 @@ function TTCCompanion:Initialize()
     customDealZero = 0,
     modifiedSuggestedPriceDealCalc = false,
     showMaterialCost = true,
+    showCraftCost = false,
     showProfitMargin = false,
     showCalc = false,
     pricingData = {},

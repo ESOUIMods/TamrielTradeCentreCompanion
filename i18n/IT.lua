@@ -27,6 +27,8 @@ ZO_CreateStringId("TTCC_CALC_NAME", "Mostra il Calcolatore dei Prezzi delle Pile
 ZO_CreateStringId("TTCC_CALC_TIP", "Mostra un piccolo calcolatore quando si pubblica un oggetto in un negozio di gilda")
 ZO_CreateStringId("TTCC_TOTAL_TITLE", "Total: ")
 ZO_CreateStringId("TTCC_RESET_WARN", "You will need to reload your UI after changing this value.")
+ZO_CreateStringId("TTCC_CRAFTCOST_PRICE_TIP", "Craft Cost: %s")
+ZO_CreateStringId("TTCC_CRAFTCOSTPER_PRICE_TIP", "Craft Cost: %s (%s each)")
 
 ZO_CreateStringId("TTCC_INVENTORY_OPTIONS", "Inventory Options")
 ZO_CreateStringId("TTCC_REPLACE_INVENTORY_VALUES_NAME", "Replace Inventory Values")
