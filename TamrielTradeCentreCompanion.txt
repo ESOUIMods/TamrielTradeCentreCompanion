@@ -5,13 +5,13 @@
 ; You can read the full terms at https://account.elderscrollsonline.com/add-on-terms
 
 ## Title: Tamriel Trade Centre Companion
-## APIVersion: 101039 101040
+## APIVersion: 101042 101043
 ## Description: Tools from Master Merchant to assist with Tamriel Trade Centre users
 ## Authors: Sharlikran
-## Version: 1.07
-## AddOnVersion: 107
+## Version: 1.08
+## AddOnVersion: 108
 ## SavedVariables: TTCCompanion_SavedVars
-## DependsOn: TamrielTradeCentre LibAddonMenu-2.0>=35
+## DependsOn: TamrielTradeCentre LibAddonMenu-2.0>=37 LibMediaProvider-1.0>=31
 ## OptionalDependsOn: DebugLogViewer>=558 AwesomeGuildStore>=3079 MasterWritInventoryMarker
 
 i18n\en.lua

@@ -1,7 +1,7 @@
 TTCCompanion = { }
 TTCCompanion.name = 'TTCCompanion'
 TTCCompanion.addonName = 'TamrielTradeCentreCompanion'
-TTCCompanion.version = '1.06'
+TTCCompanion.version = '1.08'
 
 TTCCompanion.tradingHouseBrowseMarkerHooked = false
 TTCCompanion.inventoryMarkersHooked = false
@@ -16,6 +16,7 @@ TTCCompanion.pricingNamespace = nil
 
 TTCCompanion.USE_TTC_SUGGESTED = 1
 TTCCompanion.USE_TTC_AVERAGE = 2
+TTCCompanion.USE_TTC_SALES = 3
 TTCCompanion.AGS_PERCENT_ASCENDING = 1
 TTCCompanion.AGS_PERCENT_DESCENDING = 2
 TTCCompanion.NA_PRICING_NAMESPACE = "pricingdatana"

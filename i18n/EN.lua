@@ -27,6 +27,8 @@ ZO_CreateStringId("TTCC_CALC_NAME", "Show Stack Price Calculator")
 ZO_CreateStringId("TTCC_CALC_TIP", "Show a small calculator when posting an item in a guild store.")
 ZO_CreateStringId("TTCC_TOTAL_TITLE", "Total: ")
 ZO_CreateStringId("TTCC_RESET_WARN", "You will need to reload your UI after changing this value.")
+ZO_CreateStringId("TTCC_CRAFTCOST_PRICE_TIP", "Craft Cost: %s")
+ZO_CreateStringId("TTCC_CRAFTCOSTPER_PRICE_TIP", "Craft Cost: %s (%s each)")
 
 ZO_CreateStringId("TTCC_INVENTORY_OPTIONS", "Inventory Options")
 ZO_CreateStringId("TTCC_REPLACE_INVENTORY_VALUES_NAME", "Replace Inventory Values")
@@ -75,3 +77,4 @@ ZO_CreateStringId("TTCC_DEALCALC_MODIFIEDTTC_TIP", "When enabled the TTC Suggest
 -- dropdown choices
 ZO_CreateStringId("TTCC_DEAL_CALC_TTC_SUGGESTED", "TTC Suggested")
 ZO_CreateStringId("TTCC_DEAL_CALC_TTC_AVERAGE", "TTC Average")
+ZO_CreateStringId("TTCC_DEAL_CALC_TTC_SALES", "TTC Sales")
