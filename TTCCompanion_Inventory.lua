@@ -118,6 +118,8 @@ function TTCCompanion:CreateOrUpdateSlotData(existingSlotData, bagId, slotIndex,
   slot.quality = displayQuality
   slot.equipType = equipType
   slot.isPlayerLocked = IsItemPlayerLocked(bagId, slotIndex)
+  slot.isLockedSetPiece = IsItemLockedSetPiece(bagId, slotIndex)
+  slot.canBeUsedToLearn = CanItemBeUsedToLearn(bagId, slotIndex)
   slot.isBoPTradeable = IsItemBoPAndTradeable(bagId, slotIndex)
   slot.isJunk = IsItemJunk(bagId, slotIndex)
   slot.statValue = GetItemStatValue(bagId, slotIndex) or 0
